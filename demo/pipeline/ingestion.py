@@ -51,23 +51,26 @@ async def build_vector_store(
 ) -> tuple[AsyncQdrantClient, QdrantVectorStore]:
     client = AsyncQdrantClient(
         # url=config["QDRANT_URL"],
-        location=":memory:"
+        #location=":memory:"
+        path="/content/local_qdrant"
     )
     if reindex:
         try:
+            print("delete collection...")
             await client.delete_collection(config["COLLECTION_NAME"] or "aiops24")
         except UnexpectedResponse as e:
             print(f"Collection not found: {e}")
 
-    try:
-        await client.create_collection(
-            collection_name=config["COLLECTION_NAME"] or "aiops24",
-            vectors_config=models.VectorParams(
-                size=config["VECTOR_SIZE"] or 1024, distance=models.Distance.DOT
-            ),
-        )
-    except UnexpectedResponse:
-        print("Collection already exists")
+        try:
+            print("create collection...")
+            await client.create_collection(
+                collection_name=config["COLLECTION_NAME"] or "aiops24",
+                vectors_config=models.VectorParams(
+                    size=config["VECTOR_SIZE"] or 1024, distance=models.Distance.DOT
+                ),
+            )
+        except UnexpectedResponse:
+            print("Collection already exists")
     return client, QdrantVectorStore(
         aclient=client,
         collection_name=config["COLLECTION_NAME"] or "aiops24",

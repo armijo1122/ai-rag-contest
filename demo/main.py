@@ -1,15 +1,19 @@
 import asyncio
+from sentence_transformers import SentenceTransformer
 
 from dotenv import dotenv_values
 from llama_index.core import Settings
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.core.postprocessor import SentenceTransformerRerank
 from llama_index.legacy.llms import OpenAILike as OpenAI
 from qdrant_client import models
 from tqdm.asyncio import tqdm
 
 from pipeline.ingestion import build_pipeline, build_vector_store, read_data
 from pipeline.qa import read_jsonl, save_answers
-from pipeline.rag import QdrantRetriever, generation_with_knowledge_retrieval
+from pipeline.rag import QdrantRetriever, generation_with_knowledge_retrieval, generation_with_knowledge_llm_retrieval
+
+from custom.template import QA_TEMPLATE
 
 
 async def main():
@@ -30,7 +34,7 @@ async def main():
     Settings.embed_model = embeding
 
     # 初始化 数据ingestion pipeline 和 vector store
-    client, vector_store = await build_vector_store(config, reindex=False)
+    client, vector_store = await build_vector_store(config, reindex=True)
 
     collection_info = await client.get_collection(
         config["COLLECTION_NAME"] or "aiops24"
@@ -52,7 +56,8 @@ async def main():
         )
         print(len(data))
 
-    retriever = QdrantRetriever(vector_store, embeding, similarity_top_k=3)
+    retriever = QdrantRetriever(vector_store, embeding, similarity_top_k=30)
+    reranker = SentenceTransformerRerank(model="./BAAI/bge-reranker-base", top_n=10)
 
     queries = read_jsonl("question.jsonl")
 
@@ -61,11 +66,10 @@ async def main():
 
     results = []
     for query in tqdm(queries, total=len(queries)):
-        result = await generation_with_knowledge_retrieval(
-            query["query"], retriever, llm
+        result = await generation_with_knowledge_llm_retrieval(
+            query["query"], retriever, llm, QA_TEMPLATE, reranker
         )
         results.append(result)
-
     # 处理结果
     save_answers(queries, results, "submit_result.jsonl")
 

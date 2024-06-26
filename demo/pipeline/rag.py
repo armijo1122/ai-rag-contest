@@ -84,3 +84,58 @@ async def generation_with_knowledge_retrieval(
         progress.update(1)
     return ret
 
+async def generation_with_knowledge_llm_retrieval(
+    query_str: str,
+    retriever: BaseRetriever,
+    llm: LLM,
+    qa_template: str = QA_TEMPLATE,
+    reranker: BaseNodePostprocessor | None = None,
+    debug: bool = False,
+    progress=None,
+) -> CompletionResponse:
+    #利用LLM进行问题改写
+    query_llm_contest_str = "请对如下问题进行改写，改写后的问题保持与原有领域、语义相同，并尽量包含更多细节信息。需要改写的问题是："
+    #fmt_query_llm_prompt = PromptTemplate(qa_template).format(
+    #    context_str=query_llm_contest_str, query_str=query_str
+    #)
+    # print("原问题：" + query_str)
+    #query_llm_ret = await llm.acomplete(fmt_query_llm_prompt)
+    query_llm_ret = await llm.acomplete(query_llm_contest_str + "\n" + query_str)
+    # print("重写后的问题：" + query_llm_ret.text)
+    query_bundle_llm = QueryBundle(query_str=query_llm_ret.text)
+    node_with_scores_llm = await retriever.aretrieve(query_bundle_llm)
+    #node_with_scores_llm = retriever.aretrieve(query_bundle_llm)
+    context_str_llm = "\n\n".join(
+        [f"{node.metadata['document_title']}: {node.text}" for node in node_with_scores_llm]
+    )
+    # print("改写后问题对应检索出的语义向量片段："+ context_str_llm)
+          
+    query_bundle = QueryBundle(query_str=query_str)
+    node_with_scores = await retriever.aretrieve(query_bundle)
+    #node_with_scores = retriever.aretrieve(query_bundle)
+    if debug:
+        print(f"retrieved:\n{node_with_scores}\n------")
+    if reranker:
+        node_with_scores = reranker.postprocess_nodes(node_with_scores, query_bundle)
+        if debug:
+            print(f"reranked:\n{node_with_scores}\n------")
+    context_str = "\n\n".join(
+        [f"{node.metadata['document_title']}: {node.text}" for node in node_with_scores]
+    )
+    # print("改写前问题对应检索出的语义向量片段：" + context_str)
+    context_str = context_str + context_str_llm
+    # print("合并后的context内容：" + context_str)
+    fmt_qa_prompt = PromptTemplate(qa_template).format(
+        context_str=context_str, query_str=query_str
+    )
+    try:
+        ret = await llm.acomplete(fmt_qa_prompt)
+    except:
+        fmt_qa_prompt = PromptTemplate(qa_template).format(
+            context_str=context_str_llm, query_str=query_str
+        )
+        ret = await llm.acomplete(fmt_qa_prompt)
+    #ret = llm.acomplete(fmt_qa_prompt)
+    if progress:
+        progress.update(1)
+    return ret
