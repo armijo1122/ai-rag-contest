@@ -1,9 +1,12 @@
 # 快速开始
 
-克隆本仓库后，运行`run.sh`初始化嵌入模型`BAAI/bge-small-zh-v1.5`
+克隆本仓库后，运行`run.sh`初始化嵌入模型`BAAI/bge-small-zh-v1.5`和`BAAI/bge-reranker-base`,同时`run.sh`脚本下载`nltk_data`仓库并将其中`packages`目录复制到`/root/nltk_data`目录下。
+
+然后运行py_env.sh脚本部署python环境
 
 ```sh
 bash run.sh
+source py_env.sh
 ```
 
 # 前置需求
