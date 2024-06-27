@@ -30,6 +30,7 @@ async def main():
         model_name="BAAI/bge-small-zh-v1.5",
         cache_folder="./",
         embed_batch_size=128,
+        device="cuda",
     )
     Settings.embed_model = embeding
 
