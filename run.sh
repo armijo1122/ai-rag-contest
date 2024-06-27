@@ -8,7 +8,7 @@ git clone https://www.modelscope.cn/Xorbits/bge-reranker-base.git demo/BAAI/bge-
 
 # download nltk_data
 git clone https://github.com/nltk/nltk_data.git
-cp -r nltk_data/packages/. /root/
+cp -r nltk_data/packages/. /root/nltk_data/
 
 # download dataset
 git clone https://www.modelscope.cn/datasets/issaccv/aiops2024-challenge-dataset.git demo/dataset
