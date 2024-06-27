@@ -56,7 +56,7 @@ async def main():
         )
         print(len(data))
 
-    retriever = QdrantRetriever(vector_store, embeding, similarity_top_k=30)
+    retriever = QdrantRetriever(vector_store, embeding, similarity_top_k=50)
     reranker = SentenceTransformerRerank(model="./BAAI/bge-reranker-base", top_n=10)
 
     queries = read_jsonl("question.jsonl")

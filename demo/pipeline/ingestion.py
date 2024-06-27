@@ -66,7 +66,7 @@ async def build_vector_store(
             await client.create_collection(
                 collection_name=config["COLLECTION_NAME"] or "aiops24",
                 vectors_config=models.VectorParams(
-                    size=config["VECTOR_SIZE"] or 1024, distance=models.Distance.DOT
+                    size=config["VECTOR_SIZE"] or 1024, distance=models.Distance.COSINE
                 ),
             )
         except UnexpectedResponse:
