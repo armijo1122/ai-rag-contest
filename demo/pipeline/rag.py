@@ -132,7 +132,7 @@ async def generation_with_knowledge_llm_retrieval(
         ret = await llm.acomplete(fmt_qa_prompt)
     except:
         fmt_qa_prompt = PromptTemplate(qa_template).format(
-            context_str=context_str_llm, query_str=query_str
+            context_str="", query_str=query_str
         )
         ret = await llm.acomplete(fmt_qa_prompt)
     #ret = llm.acomplete(fmt_qa_prompt)
