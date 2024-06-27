@@ -4,7 +4,7 @@
 git clone https://www.modelscope.cn/AI-ModelScope/bge-small-zh-v1.5.git demo/BAAI/bge-small-zh-v1.5
 
 # download bge reranker model
-git clone https://www.modelscope.cn/Xorbits/bge-reranker-base.git demo/BAAI/bge-reranker-base
+git clone https://www.modelscope.cn/quietnight/bge-reranker-large.git demo/BAAI/bge-reranker-large
 
 # download nltk_data
 git clone https://github.com/nltk/nltk_data.git
