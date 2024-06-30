@@ -9,9 +9,9 @@ from llama_index.legacy.llms import OpenAILike as OpenAI
 from qdrant_client import models
 from tqdm.asyncio import tqdm
 
-from pipeline.ingestion import build_pipeline, build_vector_store, read_data
+from pipeline.ingestion import build_pipeline, build_vector_store, read_data, build_kg_engine
 from pipeline.qa import read_jsonl, save_answers
-from pipeline.rag import QdrantRetriever, generation_with_knowledge_retrieval, generation_with_knowledge_llm_retrieval
+from pipeline.rag import QdrantRetriever, KgRetriever, generation_with_knowledge_retrieval, generation_with_knowledge_llm_retrieval
 
 from custom.template import QA_TEMPLATE
 
@@ -35,6 +35,8 @@ async def main():
 
     # 初始化 数据ingestion pipeline 和 vector store
     client, vector_store = await build_vector_store(config, reindex=True)
+    # 初始化知识图谱
+    kg_engine = build_kg_engine(llm, embeding, similarity_top_n=5)
 
     collection_info = await client.get_collection(
         config["COLLECTION_NAME"] or "aiops24"
@@ -57,6 +59,7 @@ async def main():
         print(len(data))
 
     retriever = QdrantRetriever(vector_store, embeding, similarity_top_k=50)
+    kg_retriever = KgRetriever(kg_engine, embeding)
     reranker = SentenceTransformerRerank(model="./BAAI/bge-reranker-base", top_n=10)
 
     queries = read_jsonl("question.jsonl")
@@ -67,7 +70,7 @@ async def main():
     results = []
     for query in tqdm(queries, total=len(queries)):
         result = await generation_with_knowledge_llm_retrieval(
-            query["query"], retriever, llm, QA_TEMPLATE, reranker
+            query["query"], retriever, kg_retriever, llm, QA_TEMPLATE, reranker
         )
         results.append(result)
     # 处理结果

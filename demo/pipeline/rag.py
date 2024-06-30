@@ -5,6 +5,7 @@ from llama_index.core.llms.llm import LLM
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from llama_index.core.postprocessor.types import BaseNodePostprocessor
 from llama_index.core.vector_stores import VectorStoreQuery
+from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.core import (
     QueryBundle,
     PromptTemplate,
@@ -55,6 +56,20 @@ class QdrantRetriever(BaseRetriever):
             node_with_scores.append(NodeWithScore(node=node, score=similarity))
         return node_with_scores
 
+class KgRetriever(BaseRetriever):
+    def __init__(
+        self,
+        query_engine: RetrieverQueryEngine,
+        embed_model: BaseEmbedding
+    ) -> None:
+        self.query_engine = query_engine
+        self._embed_model = embed_model
+        super().__init__()
+
+    def _retrieve(self, query_str: str) -> str:
+        response = self.query_engine.query(query_str)
+        return response
+
 
 async def generation_with_knowledge_retrieval(
     query_str: str,
@@ -87,6 +102,7 @@ async def generation_with_knowledge_retrieval(
 async def generation_with_knowledge_llm_retrieval(
     query_str: str,
     retriever: BaseRetriever,
+    kg_retriever: BaseRetriever,
     llm: LLM,
     qa_template: str = QA_TEMPLATE,
     reranker: BaseNodePostprocessor | None = None,
@@ -123,8 +139,10 @@ async def generation_with_knowledge_llm_retrieval(
     context_str = "\n\n".join(
         [f"{node.metadata['document_title']}: {node.text}" for node in node_with_scores]
     )
+    # knowledge graph retrieval
+    kg_str = kg_retriever.query(query_str)
     # print("改写前问题对应检索出的语义向量片段：" + context_str)
-    context_str = context_str + context_str_llm
+    context_str = kg_str + context_str + context_str_llm
     # print("合并后的context内容：" + context_str)
     fmt_qa_prompt = PromptTemplate(qa_template).format(
         context_str=context_str, query_str=query_str

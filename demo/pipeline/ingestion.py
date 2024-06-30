@@ -9,6 +9,10 @@ from llama_index.core.schema import Document, MetadataMode
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.http.exceptions import UnexpectedResponse
+from llama_index import (ServiceContext,
+                         KnowledgeGraphIndex)
+from llama_index.graph_stores import SimpleGraphStore
+from llama_index.storage.storage_context import StorageContext
 
 from custom.template import SUMMARY_EXTRACT_TEMPLATE
 from custom.transformation import CustomFilePathExtractor, CustomTitleExtractor
@@ -77,3 +81,34 @@ async def build_vector_store(
         parallel=4,
         batch_size=32,
     )
+
+async def build_kg_engine(
+    llm: LLM,
+    embed_model: BaseEmbedding,
+    similarity_top_n: 5
+):
+    documents = read_data("data")
+    #setup the service context
+ 
+    service_context = ServiceContext.from_defaults(
+        chunk_size=256,
+        llm=llm,
+        embed_model=embed_model
+    )
+    
+    #setup the storage context
+    
+    graph_store = SimpleGraphStore()
+    storage_context = StorageContext.from_defaults(graph_store=graph_store)
+    
+    #Construct the Knowlege Graph Undex
+    index = KnowledgeGraphIndex.from_documents(documents=documents,
+                                            max_triplets_per_chunk=3,
+                                            service_context=service_context,
+                                            storage_context=storage_context,
+                                            include_embeddings=True)
+    query_engine = index.as_query_engine(include_text=True,
+                                     response_mode ="tree_summarize",
+                                     embedding_mode="hybrid",
+                                     similarity_top_k=similarity_top_n,)
+    return query_engine
