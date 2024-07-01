@@ -140,7 +140,7 @@ async def generation_with_knowledge_llm_retrieval(
         [f"{node.metadata['document_title']}: {node.text}" for node in node_with_scores]
     )
     # knowledge graph retrieval
-    kg_str = kg_retriever.query(query_str)
+    kg_str = kg_retriever._retrieve(query_str)
     # print("改写前问题对应检索出的语义向量片段：" + context_str)
     context_str = kg_str + context_str + context_str_llm
     # print("合并后的context内容：" + context_str)

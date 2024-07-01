@@ -9,10 +9,13 @@ from llama_index.core.schema import Document, MetadataMode
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.http.exceptions import UnexpectedResponse
-from llama_index import (ServiceContext,
+from llama_index.core import (ServiceContext,
                          KnowledgeGraphIndex)
-from llama_index.graph_stores import SimpleGraphStore
-from llama_index.storage.storage_context import StorageContext
+from llama_index.core.graph_stores import SimpleGraphStore
+from llama_index.core import StorageContext
+from llama_index.core.callbacks import (CallbackManager, LlamaDebugHandler, )
+
+
 
 from custom.template import SUMMARY_EXTRACT_TEMPLATE
 from custom.transformation import CustomFilePathExtractor, CustomTitleExtractor
@@ -82,18 +85,21 @@ async def build_vector_store(
         batch_size=32,
     )
 
-async def build_kg_engine(
+def build_kg_engine(
     llm: LLM,
     embed_model: BaseEmbedding,
     similarity_top_n: 5
 ):
     documents = read_data("data")
     #setup the service context
- 
+    
+    llama_debug = LlamaDebugHandler(print_trace_on_end=True)
+    callback_manager = CallbackManager([llama_debug])
     service_context = ServiceContext.from_defaults(
-        chunk_size=256,
         llm=llm,
-        embed_model=embed_model
+        embed_model=embed_model,
+        text_splitter=SentenceSplitter(chunk_size=1024, chunk_overlap=50),
+        callback_manager=callback_manager,
     )
     
     #setup the storage context
