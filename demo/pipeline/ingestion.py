@@ -12,6 +12,7 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 from llama_index.core import (ServiceContext,
                          KnowledgeGraphIndex)
 from llama_index.core.graph_stores import SimpleGraphStore
+from llama_index.graph_stores.neo4j import Neo4jGraphStore
 from llama_index.core import StorageContext
 from llama_index.core.callbacks import (CallbackManager, LlamaDebugHandler, )
 
@@ -104,7 +105,7 @@ def build_kg_engine(
     
     #setup the storage context
     
-    graph_store = SimpleGraphStore()
+    graph_store = Neo4jGraphStore()
     storage_context = StorageContext.from_defaults(graph_store=graph_store)
     
     #Construct the Knowlege Graph Undex
