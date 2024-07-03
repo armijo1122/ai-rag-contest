@@ -25,6 +25,7 @@ async def main():
         model="glm-4",
         api_base="https://open.bigmodel.cn/api/paas/v4/",
         is_chat_model=True,
+        context_window=32768,
     )
     embeding = HuggingFaceEmbedding(
         model_name="BAAI/bge-small-zh-v1.5",
